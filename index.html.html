@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화학 탐구: 기체의 종류(분자량)에 따른 부피 변화</title>
+    <!-- Chart.js 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+            --accent-purple: #c084fc;
+        }
+
+        * { box-sizing: border-box; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; }
+        body { background: var(--bg-color); color: var(--text-primary); margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { font-size: 2rem; background: linear-gradient(135deg, #38bdf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px; }
+        
+        /* 탐구 목적 버튼 및 모달 스타일 */
+        .target-btn {
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white; border: none; padding: 10px 22px; border-radius: 20px;
+            font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+        }
+        .target-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6); }
+
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); backdrop-filter: blur(5px); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: #1e293b; border: 1px solid var(--accent-purple); padding: 30px;
+            border-radius: 16px; max-width: 600px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-title { font-size: 1.3rem; color: var(--accent-purple); margin-bottom: 15px; font-weight: bold; }
+        .modal-body { font-size: 1.1rem; line-height: 1.6; color: #e2e8f0; word-break: keep-all; }
+        .close-btn { margin-top: 20px; background: #334155; color: white; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; }
+
+        /* 통제 변인 바 */
+        .controls-bar {
+            display: flex; justify-content: space-around; background: var(--card-bg);
+            border: 1px solid var(--border-color); border-radius: 12px; padding: 15px; margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .control-item { text-align: center; }
+        .control-label { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px; }
+        .control-val { font-size: 1.1rem; font-weight: bold; color: var(--accent-blue); }
+
+        /* 그리드 레이아웃 */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 16px; padding: 20px; backdrop-filter: blur(10px);
+        }
+        .panel-title { font-size: 1.1rem; font-weight: bold; margin-bottom: 15px; color: var(--accent-blue); display: flex; align-items: center; gap: 8px; }
+
+        select, input {
+            width: 100%; padding: 12px; background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border-color); border-radius: 8px; color: white; font-size: 1rem; margin-bottom: 15px;
+        }
+
+        /* 피스톤 용기 시각화 영역 */
+        .piston-chamber {
+            width: 100%; height: 260px; background: rgba(15, 23, 42, 0.9);
+            border: 2px solid var(--border-color); border-radius: 12px; position: relative; overflow: hidden;
+        }
+        canvas { width: 100%; height: 100%; }
+
+        /* 수치 디스플레이 */
+        .readout-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .readout-card { background: rgba(15, 23, 42, 0.6); padding: 12px; border-radius: 8px; text-align: center; border: 1px solid var(--border-color); }
+        .readout-val { font-size: 1.3rem; font-weight: bold; margin-top: 4px; }
+
+        /* 버튼 및 테이블 */
+        .action-btn {
+            width: 100%; padding: 12px; background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 15px;
+        }
+        .action-btn:hover { opacity: 0.9; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; text-align: center; }
+        th, td { padding: 8px; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-secondary); font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧪 기체 분자량과 부피 변화 시뮬레이션</h1>
+        <button class="target-btn" onclick="openModal()">🎯 탐구 목적 확인하기</button>
+    </header>
+
+    <!-- 통제 변인 고정 디스플레이 -->
+    <div class="controls-bar">
+        <div class="control-item">
+            <div class="control-label">🔒 용기 압력 ($P$)</div>
+            <div class="control-val">1.00 atm (대기압)</div>
+        </div>
+        <div class="control-item">
+            <div class="control-label">🔒 기체 질량 ($w$)</div>
+            <div class="control-val">16.00 g</div>
+        </div>
+        <div class="control-item">
+            <div class="control-label">🔒 절대 온도 ($T$)</div>
+            <div class="control-val">273.15 K (0 ℃)</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- 왼쪽: 제어 및 피스톤 시각화 -->
+        <div class="panel">
+            <div class="panel-title">1. 기체 선택 (독립 변인)</div>
+            <select id="gasSelect" onchange="handleGasChange()">
+                <option value="2" data-name="수소 (H₂)" data-color="#f43f5e">수소 (H₂, 분자량: 2)</option>
+                <option value="4" data-name="헬륨 (He)" data-color="#fbbf24">헬륨 (He, 분자량: 4)</option>
+                <option value="16" data-name="메탄 (CH₄)" data-color="#4ade80" selected>메탄 (CH₄, 분자량: 16)</option>
+                <option value="28" data-name="질소 (N₂)" data-color="#38bdf8">질소 (N₂, 분자량: 28)</option>
+                <option value="32" data-name="산소 (O₂)" data-color="#818cf8">산소 (O₂, 분자량: 32)</option>
+                <option value="44" data-name="이산화탄소 (CO₂)" data-color="#c084fc">이산화탄소 (CO₂, 분자량: 44)</option>
+                <option value="custom" data-name="미지의 기체">-- 직접 입력 (사용자 지정) --</option>
+            </select>
+
+            <div id="customInputBox" style="display: none;">
+                <input type="number" id="customMw" placeholder="분자량 입력 (예: 64)" value="64" min="1" max="200" oninput="updateSimulation()">
+            </div>
+
+            <div class="panel-title">2. 가변 피스톤 실린더 시각화</div>
+            <div class="piston-chamber">
+                <canvas id="pistonCanvas"></canvas>
+            </div>
+
+            <div class="readout-grid">
+                <div class="readout-card">
+                    <div class="control-label">기체 몰수 ($n$)</div>
+                    <div class="readout-val" id="molVal" style="color: var(--accent-purple);">1.00 mol</div>
+                </div>
+                <div class="readout-card">
+                    <div class="control-label">측정된 부피 ($V$)</div>
+                    <div class="readout-val" id="volumeVal" style="color: var(--accent-green);">22.41 L</div>
+                </div>
+            </div>
+
+            <button class="action-btn" onclick="recordData()">현재 데이터 표에 기록</button>
+        </div>
+
+        <!-- 오른쪽: 그래프 및 데이터 분석 -->
+        <div class="panel">
+            <div class="panel-title">3. 분자량($M$) vs 부피($V$) 그래프</div>
+            <div style="height: 250px;">
+                <canvas id="chartCanvas"></canvas>
+            </div>
+
+            <div class="panel-title" style="margin-top: 20px;">4. 실험 결과 기록표</div>
+            <div style="max-height: 160px; overflow-y: auto;">
+                <table id="resultTable">
+                    <thead>
+                        <tr>
+                            <th>기체 이름</th>
+                            <th>분자량 ($M$)</th>
+                            <th>몰수 ($n$)</th>
+                            <th>부피 ($V$, L)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 탐구 목적 모달 -->
+<div class="modal" id="targetModal">
+    <div class="modal-content">
+        <div class="modal-title">🎯 탐구 목적</div>
+        <div class="modal-body">
+            "압력, 온도가 일정하고 기체의 질량이 같을 때, 기체의 분자량이 클수록 몰수가 줄어들어 기체의 부피가 감소함을 확인한다."
+        </div>
+        <button class="close-btn" onclick="closeModal()">확인 및 닫기</button>
+    </div>
+</div>
+
+<script>
+    const R = 0.08206;
+    const P = 1.00; // atm
+    const MASS = 16.0; // g
+    const T = 273.15; // K
+
+    const canvas = document.getElementById('pistonCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animId;
+
+    // Chart.js 그래프 초기화
+    const chartCtx = document.getElementById('chartCanvas').getContext('2d');
+    const chart = new Chart(chartCtx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: '실험 측정점',
+                data: [],
+                backgroundColor: '#38bdf8',
+                pointRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: { title: { display: true, text: '분자량 (M)', color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0, max: 80 },
+                y: { title: { display: true, text: '부피 V (L)', color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' }, min: 0, max: 200 }
+            },
+            plugins: { legend: { labels: { color: '#f8fafc' } } }
+        }
+    });
+
+    function handleGasChange() {
+        const select = document.getElementById('gasSelect');
+        const customBox = document.getElementById('customInputBox');
+        if (select.value === 'custom') {
+            customBox.style.display = 'block';
+        } else {
+            customBox.style.display = 'none';
+        }
+        updateSimulation();
+    }
+
+    function getSelectedGasInfo() {
+        const select = document.getElementById('gasSelect');
+        if (select.value === 'custom') {
+            const mw = parseFloat(document.getElementById('customMw').value) || 1;
+            return { name: "미지의 기체", mw: mw, color: "#f43f5e" };
+        } else {
+            const opt = select.options[select.selectedIndex];
+            return { name: opt.getAttribute('data-name'), mw: parseFloat(select.value), color: opt.getAttribute('data-color') };
+        }
+    }
+
+    function updateSimulation() {
+        const gas = getSelectedGasInfo();
+        const n = MASS / gas.mw;
+        const V = (n * R * T) / P;
+
+        document.getElementById('molVal').innerText = n.toFixed(2) + " mol";
+        document.getElementById('volumeVal').innerText = V.toFixed(2) + " L";
+
+        // 애니메이션 입자 및 피스톤 재설정
+        initPistonAnimation(V, n, gas.color, gas.mw);
+    }
+
+    function initPistonAnimation(volume, mol, color, mw) {
+        canvas.width = canvas.parentElement.clientWidth;
+        canvas.height = canvas.parentElement.clientHeight;
+
+        // 부피에 따른 피스톤 높이 계산 (최대 180L 기준 레벨링)
+        const maxVol = 180;
+        const clampedVol = Math.min(Math.max(volume, 5), maxVol);
+        const pistonY = canvas.height - (clampedVol / maxVol) * (canvas.height - 40);
+
+        // 시각적 입자 수 (몰수에 비례)
+        const particleCount = Math.min(Math.max(Math.round(mol * 12), 6), 100);
+        const speed = Math.sqrt(40 / mw);
+
+        particles = [];
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * (canvas.width - 20) + 10,
+                y: Math.random() * (canvas.height - pistonY - 20) + pistonY + 10,
+                vx: (Math.random() - 0.5) * 3 * speed,
+                vy: (Math.random() - 0.5) * 3 * speed,
+                color: color
+            });
+        }
+
+        if (animId) cancelAnimationFrame(animId);
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 피스톤 헤드 그리기
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(0, pistonY - 12, canvas.width, 12);
+            ctx.fillStyle = 'rgba(100, 116, 139, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, pistonY - 12);
+
+            // 대기압 화살표 연출
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '12px sans-serif';
+            ctx.fillText('대기압 (1.0 atm)', canvas.width / 2 - 40, pistonY - 20);
+
+            // 입자 움직임
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if (p.x < 5 || p.x > canvas.width - 5) p.vx *= -1;
+                if (p.y < pistonY + 5 || p.y > canvas.height - 5) p.vy *= -1;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+            });
+
+            animId = requestAnimationFrame(loop);
+        }
+        loop();
+    }
+
+    function recordData() {
+        const gas = getSelectedGasInfo();
+        const n = (MASS / gas.mw).toFixed(2);
+        const V = ((MASS / gas.mw) * R * T / P).toFixed(2);
+
+        const tbody = document.querySelector('#resultTable tbody');
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${gas.name}</td><td>${gas.mw}</td><td>${n}</td><td><b>${V}</b></td>`;
+        tbody.appendChild(row);
+
+        chart.data.datasets[0].data.push({ x: gas.mw, y: parseFloat(V) });
+        chart.update();
+    }
+
+    function openModal() { document.getElementById('targetModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('targetModal').style.display = 'none'; }
+
+    window.onload = () => updateSimulation();
+</script>
+</body>
+</html>
